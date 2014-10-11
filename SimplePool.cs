@@ -8,12 +8,18 @@ using System.Collections.Generic;
 public static class SimplePool 
 {
     public static Dictionary<string, GameObject[]>      pools;
-    public static int                                   poolSize    = 50;
-    public static int                                   poolMargin  = 10;
+    public static int                                   poolSize        = 1000;
+    public static int                                   poolIncreasSize = 100;
+    public static int                                   poolMargin      = 50;
     public static Dictionary<string, int>               poolCounts;
     public static Dictionary<string, HashSet<int>>      activeObjs;
 
     public static GameObject Catch (GameObject go, Transform t)
+    {
+        return Catch(go, t.position, t.rotation);
+    }
+
+    public static GameObject Catch (GameObject go, Vector3 pos, Quaternion rot)
     {
         if (!PoolExists(go.name)) { CreatePool(go);       }
         if (PoolIsFull(go.name))  { IncreasePoolSize(go); }
@@ -28,8 +34,8 @@ public static class SimplePool
             activeObjs[go.name].Add(hc);
             Transform  pT  = pools[go.name][i].GetComponent<Transform>();
 
-            pT.position = t.position;
-            pT.rotation = t.rotation;
+            pT.position = pos;
+            pT.rotation = rot;
 
             pools[go.name][i].SetActive(true);
 
@@ -64,15 +70,15 @@ public static class SimplePool
             activeObjs = new Dictionary<string, HashSet<int>>();
         }
 
-        pools[go.name] = CreateObjs(go);
+        pools[go.name] = CreateObjs(go, poolSize);
         activeObjs[go.name] = new HashSet<int>();
     }
 
     public static void IncreasePoolSize (GameObject go)
     {
         int          currLen = pools[go.name].Length;
-        GameObject[] nPool   = new GameObject[currLen + poolSize];
-        GameObject[] newObjs = CreateObjs(go);
+        GameObject[] nPool   = new GameObject[currLen + poolIncreasSize];
+        GameObject[] newObjs = CreateObjs(go, poolIncreasSize);
         
         Array.Copy(pools[go.name], 0, nPool, 0, currLen);
         Array.Copy(newObjs, 0, nPool, currLen, newObjs.Length);
@@ -80,11 +86,11 @@ public static class SimplePool
         pools[go.name] = nPool;
     }
 
-    public static GameObject[] CreateObjs (GameObject go)
+    public static GameObject[] CreateObjs (GameObject go, int num)
     {
-        GameObject[] gos = new GameObject[poolSize];
+        GameObject[] gos = new GameObject[num];
 
-        for (int i = 0; i < poolSize; i++)
+        for (int i = 0; i < num; i++)
         {
             GameObject goInst = (GameObject) GameObject.Instantiate(   
                 go, 
